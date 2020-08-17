@@ -1,0 +1,2 @@
+language = "csharp"
+run = "cd Conway\nmcs -out:main.exe conway.cs main.cs\nmono main.exe"
