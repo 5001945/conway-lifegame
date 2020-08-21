@@ -16,14 +16,15 @@ namespace Conway
 		{
 			// 파일에서는 순서대로 규칙, 월드 크기, 살아있는 좌표가 나온다. 또한 #으로 시작하는 주석도 나올 수 있다.
 
+			// 먼저 파일에서 한 줄씩 읽게끔 StreamReader를 설정한다.
 			StreamReader sr = new StreamReader(filename);
 
-			// 먼저 rule을 짓는다. B3/S23, S23/B3, 23/3 등으로 나올 수 있다.
+			// 파일에서 rule을 읽는다. B3/S23, S23/B3, 23/3 등으로 나올 수 있다.
 			string rawRule = sr.ReadLine();
 			string[] rules;
 			/*
 			첫 줄의 규칙은 다음과 같다:
-			1. 숫자는 0-8까지 가능하고, 최대 9개까지 올 수 있다. (사실 겹치지 않는 숫자면 좋겠다만... 그건 잘 모르겠다)
+			1. 숫자는 0-8까지 가능하고, 최대 9개까지 올 수 있다. (사실 겹치지 않는 숫자면 좋겠다만... 이걸 정규표현식으로 표현하는 법은 잘 모르겠다)
 			2. B/S 꼴, S/B 꼴, / 꼴이 있다.
 			*/
 			Regex regexBS = new Regex(@"^B[0-8]{0,9}/S[0-8]{0,9}$");
@@ -60,18 +61,17 @@ namespace Conway
 			foreach (char ch in rules[1])
 				survive.Add(ch - '0');
 			/*
-			// 임시 TODO
+			// 예시 : B3/S23 규칙을 만듦
 			this.Birth = new List<int> {3};
 			this.Survive = new List<int> {2, 3};
 			*/
 
 			// 그 다음 월드의 크기를 얻는다.
-			
 			string rawWorldSize = sr.ReadLine();
 			int[] worldSizes = Str2Intarr(rawWorldSize);
 			CN = new CellNetwork(worldSizes[0], worldSizes[1]);
 			/*
-			// 임시 TODO
+			// 예시 : 20x20 월드를 만듦
 			CN = new CellNetwork(20, 20);
 			*/
 
@@ -86,7 +86,7 @@ namespace Conway
 			}
 			sr.Close();
 			/*
-			// 임시 TODO
+			// 예시 : plus 모양 만듦
 			CN[6, 12].NowState = 1;
 			CN[7, 11].NowState = 1;
 			CN[7, 12].NowState = 1;
@@ -152,33 +152,8 @@ namespace Conway
 
 	};
 
-	internal class CellNetwork
+	public class CellNetwork
 	{
-		internal class Cell
-		{
-			public Cell() {}
-
-			public Cell[] NearCell = new Cell[8];  // 클래스는 기본적으로 ref 형식. 처음엔 null로 맞춰있다.
-			public int NowState = 0;  // 나중에 읽기 전용으로 해야 할 텐데...
-			public int NextState = 0;  // 나중에 읽기 전용으로 해야 할 텐데...
-			// 0: dead, 1: alive
-
-			// 이하는 읽기 전용.
-			public int LivingCellCount
-			{
-				get
-				{
-					int sum = 0;
-					foreach (Cell c in NearCell)
-					{
-						if (c != null)
-							sum += c.NowState;
-					}
-					return sum;
-				}
-			}
-		};
-		
 		private List<Cell> Cells;
 		private Cell OutOfBound = new Cell();
 
@@ -274,8 +249,41 @@ namespace Conway
 		public void UpdateStates()
 		{
 			foreach (Cell c in Cells)
-				c.NowState = c.NextState;
+				c.UpdateState();
 		}
 	}
+
+	public class Cell
+	{
+		public Cell() {}
+
+		public Cell[] NearCell = new Cell[8];  // 클래스는 기본적으로 ref 형식. 처음엔 null로 맞춰있다.
+		
+		private int nowState = 0;
+		public int nextState = 0;
+		public int NowState { get => nowState; set => nowState = value; }  // 읽기 전용으로 하고 싶은 마음이 굴뚝같지만 GameOfLife 초기화할 때 딱 한 번 접근하기 때문에 그럴 수 없다...
+		public int NextState { get => nextState; set => nextState = value; }  // 읽기 전용으로 하고 싶은 마음이 굴뚝같지만 CellNetwork에서 nextState 계산할 때 딱 한 번 접근하기 때문에 그럴 수 없다...
+		// 0: dead, 1: alive
+
+		// 이하는 읽기 전용.
+		public int LivingCellCount
+		{
+			get
+			{
+				int sum = 0;
+				foreach (Cell c in NearCell)
+				{
+					if (c != null)
+						sum += c.nowState;
+				}
+				return sum;
+			}
+		}
+
+		public void UpdateState()
+		{
+			nowState = nextState;
+		}
+	};
 
 }
