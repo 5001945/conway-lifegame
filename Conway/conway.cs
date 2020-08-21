@@ -12,132 +12,6 @@ namespace Conway
 
 	public class GameOfLife
 	{
-		internal class CellNetwork
-		{
-			internal class Cell
-			{
-				public Cell() {}
-
-				public Cell[] NearCell = new Cell[8];  // 클래스는 기본적으로 ref 형식. 처음엔 null로 맞춰있다.
-				public int NowState = 0;  // 나중에 읽기 전용으로 해야 할 텐데...
-				public int NextState = 0;  // 나중에 읽기 전용으로 해야 할 텐데...
-				// 0: dead, 1: alive
-
-				// 이하는 읽기 전용.
-				public int LivingCellCount
-				{
-					get
-					{
-						int sum = 0;
-						foreach (Cell c in NearCell)
-						{
-							if (c != null)
-								sum += c.NowState;
-						}
-						return sum;
-					}
-				}
-			};
-			
-			private List<Cell> Cells;
-			private Cell OutOfBound = new Cell();
-
-			public readonly int Width;
-			public readonly int Height;
-			// Width와 Height는 불변량.
-
-			public CellNetwork(int width, int height)
-			{
-				// CellNetwork의 Width와 Height에 값을 대입한다.
-				this.Width = width;
-				this.Height = height;
-
-				// Cells에 Width*Height개만큼 기본 Cell을 넣는다.
-				Cells = new List<Cell> ();
-				for (int i = 0; i < Width*Height; i++)
-					Cells.Add(new Cell());
-
-				// 각 Cell에 대해 NearCell을 연결한다.
-				for (int i = 0; i < Width*Height; i++)
-				{
-					// direction은 시계방향으로 0부터 7까지이다.
-					// index는 왼쪽 위로 갈 수록 작아진다.
-
-					// case Up:
-					if (i < Width)
-						Cells[i].NearCell[(int)DIRECTION.Up] = OutOfBound;
-					else
-						Cells[i].NearCell[(int)DIRECTION.Up] = Cells[i - Width];
-					// case UpRight:
-					if ( (i < Width) || (i%Width == Width-1) )
-						Cells[i].NearCell[(int)DIRECTION.UpRight] = OutOfBound;
-					else
-						Cells[i].NearCell[(int)DIRECTION.UpRight] = Cells[i - Width + 1];
-					// case Right:
-					if (i%Width == Width-1)
-						Cells[i].NearCell[(int)DIRECTION.Right] = OutOfBound;
-					else
-						Cells[i].NearCell[(int)DIRECTION.Right] = Cells[i + 1];
-					// case DownRight:
-					if ( (i >= Width*(Height-1)) || (i%Width == Width-1) )
-						Cells[i].NearCell[(int)DIRECTION.DownRight] = OutOfBound;
-					else
-						Cells[i].NearCell[(int)DIRECTION.DownRight] = Cells[i + Width + 1];
-					// case Down:
-					if (i >= Width*(Height-1))
-						Cells[i].NearCell[(int)DIRECTION.Down] = OutOfBound;
-					else
-						Cells[i].NearCell[(int)DIRECTION.Down] = Cells[i + Width];
-					// case DownLeft:
-					if ( (i >= Width*(Height-1)) || (i%Width == 0) )
-						Cells[i].NearCell[(int)DIRECTION.DownLeft] = OutOfBound;
-					else
-						Cells[i].NearCell[(int)DIRECTION.DownLeft] = Cells[i + Width - 1];
-					// case Left:
-					if (i%Width == 0)
-						Cells[i].NearCell[(int)DIRECTION.Left] = OutOfBound;
-					else
-						Cells[i].NearCell[(int)DIRECTION.Left] = Cells[i - 1];
-					// case UpLeft:
-					if ( (i < Width) || (i%Width == 0) )
-						Cells[i].NearCell[(int)DIRECTION.UpLeft] = OutOfBound;
-					else
-						Cells[i].NearCell[(int)DIRECTION.UpLeft] = Cells[i - Width - 1];
-				}
-			}
-			public Cell this[int row, int col]
-			{
-				/*
-				CellNetwork CN(w, h); 하고서
-				CN[3, 2] 하는 식으로 액세스가 가능해짐.
-				*/
-				get { return Cells[row * Width + col]; }
-				set { Cells[row * Width + col] = value; }
-			}
-
-			public void CalculateNextStates(GameOfLife GoL)
-			{
-				foreach (Cell c in Cells)
-				{
-					// 만약 c의 livingCellCount가 birth에 있다면, c의 nextState는 1.
-					if (GoL.Birth.Contains(c.LivingCellCount))
-						c.NextState = 1;
-					// 만약 c의 livingCellCount가 survive에 있다면, c의 nextState는 유지.
-					else if (GoL.Survive.Contains(c.LivingCellCount))
-						c.NextState = c.NowState;
-					// 그 외의 경우는 죽는다.
-					else
-						c.NextState = 0;
-				}
-			}
-
-			public void UpdateStates()
-			{
-				foreach (Cell c in Cells)
-					c.NowState = c.NextState;
-			}
-		}
-
 		public GameOfLife(string filename)
 		{
 			// 파일에서는 순서대로 규칙, 월드 크기, 살아있는 좌표가 나온다. 또한 #으로 시작하는 주석도 나올 수 있다.
@@ -182,9 +56,9 @@ namespace Conway
 			// rules는 string[] 타입으로, 각 원소는 "", "12", "345678" 등과 같이 되어 있다.
 			// 이를 int[] 타입으로 바꿔 주어야 한다.
 			foreach (char ch in rules[0])
-				Birth.Add(ch - '0');
+				birth.Add(ch - '0');
 			foreach (char ch in rules[1])
-				Survive.Add(ch - '0');
+				survive.Add(ch - '0');
 			/*
 			// 임시 TODO
 			this.Birth = new List<int> {3};
@@ -221,17 +95,21 @@ namespace Conway
 			*/
 		}
 
-		public List<int> Birth = new List<int> ();
-		public List<int> Survive = new List<int> ();
+		private List<int> birth = new List<int> ();
+		private List<int> survive = new List<int> ();
+		public List<int> Birth => birth;
+		public List<int> Survive => survive;
 
 		private CellNetwork CN;
-		public int TurnCount = 0;
+
+		private int turnCount = 0;
+		public int TurnCount => turnCount;
 
 		public void NextTurn()
 		{
 			this.Calculate();
 			CN.UpdateStates();
-			TurnCount++;
+			turnCount++;
 		}
 		public void Calculate()
 		{
@@ -251,7 +129,7 @@ namespace Conway
 				}
 				Console.WriteLine();
 			}
-			Console.WriteLine($"Turn : {TurnCount}");
+			Console.WriteLine($"Turn : {turnCount}");
 			Console.WriteLine();
 		}
 
@@ -273,4 +151,131 @@ namespace Conway
 		}
 
 	};
+
+	internal class CellNetwork
+	{
+		internal class Cell
+		{
+			public Cell() {}
+
+			public Cell[] NearCell = new Cell[8];  // 클래스는 기본적으로 ref 형식. 처음엔 null로 맞춰있다.
+			public int NowState = 0;  // 나중에 읽기 전용으로 해야 할 텐데...
+			public int NextState = 0;  // 나중에 읽기 전용으로 해야 할 텐데...
+			// 0: dead, 1: alive
+
+			// 이하는 읽기 전용.
+			public int LivingCellCount
+			{
+				get
+				{
+					int sum = 0;
+					foreach (Cell c in NearCell)
+					{
+						if (c != null)
+							sum += c.NowState;
+					}
+					return sum;
+				}
+			}
+		};
+		
+		private List<Cell> Cells;
+		private Cell OutOfBound = new Cell();
+
+		public readonly int Width;
+		public readonly int Height;
+		// Width와 Height는 불변량.
+
+		public CellNetwork(int width, int height)
+		{
+			// CellNetwork의 Width와 Height에 값을 대입한다.
+			this.Width = width;
+			this.Height = height;
+
+			// Cells에 Width*Height개만큼 기본 Cell을 넣는다.
+			Cells = new List<Cell> ();
+			for (int i = 0; i < Width*Height; i++)
+				Cells.Add(new Cell());
+
+			// 각 Cell에 대해 NearCell을 연결한다.
+			for (int i = 0; i < Width*Height; i++)
+			{
+				// direction은 시계방향으로 0부터 7까지이다.
+				// index는 왼쪽 위로 갈 수록 작아진다.
+
+				// case Up:
+				if (i < Width)
+					Cells[i].NearCell[(int)DIRECTION.Up] = OutOfBound;
+				else
+					Cells[i].NearCell[(int)DIRECTION.Up] = Cells[i - Width];
+				// case UpRight:
+				if ( (i < Width) || (i%Width == Width-1) )
+					Cells[i].NearCell[(int)DIRECTION.UpRight] = OutOfBound;
+				else
+					Cells[i].NearCell[(int)DIRECTION.UpRight] = Cells[i - Width + 1];
+				// case Right:
+				if (i%Width == Width-1)
+					Cells[i].NearCell[(int)DIRECTION.Right] = OutOfBound;
+				else
+					Cells[i].NearCell[(int)DIRECTION.Right] = Cells[i + 1];
+				// case DownRight:
+				if ( (i >= Width*(Height-1)) || (i%Width == Width-1) )
+					Cells[i].NearCell[(int)DIRECTION.DownRight] = OutOfBound;
+				else
+					Cells[i].NearCell[(int)DIRECTION.DownRight] = Cells[i + Width + 1];
+				// case Down:
+				if (i >= Width*(Height-1))
+					Cells[i].NearCell[(int)DIRECTION.Down] = OutOfBound;
+				else
+					Cells[i].NearCell[(int)DIRECTION.Down] = Cells[i + Width];
+				// case DownLeft:
+				if ( (i >= Width*(Height-1)) || (i%Width == 0) )
+					Cells[i].NearCell[(int)DIRECTION.DownLeft] = OutOfBound;
+				else
+					Cells[i].NearCell[(int)DIRECTION.DownLeft] = Cells[i + Width - 1];
+				// case Left:
+				if (i%Width == 0)
+					Cells[i].NearCell[(int)DIRECTION.Left] = OutOfBound;
+				else
+					Cells[i].NearCell[(int)DIRECTION.Left] = Cells[i - 1];
+				// case UpLeft:
+				if ( (i < Width) || (i%Width == 0) )
+					Cells[i].NearCell[(int)DIRECTION.UpLeft] = OutOfBound;
+				else
+					Cells[i].NearCell[(int)DIRECTION.UpLeft] = Cells[i - Width - 1];
+			}
+		}
+		public Cell this[int row, int col]
+		{
+			/*
+			CellNetwork CN(w, h); 하고서
+			CN[3, 2] 하는 식으로 액세스가 가능해짐.
+			*/
+			get { return Cells[row * Width + col]; }
+			set { Cells[row * Width + col] = value; }
+		}
+
+		public void CalculateNextStates(GameOfLife GoL)
+		{
+			foreach (Cell c in Cells)
+			{
+				// 만약 c의 livingCellCount가 birth에 있다면, c의 nextState는 1.
+				if (GoL.Birth.Contains(c.LivingCellCount))
+					c.NextState = 1;
+				// 만약 c의 livingCellCount가 survive에 있다면, c의 nextState는 유지.
+				else if (GoL.Survive.Contains(c.LivingCellCount))
+					c.NextState = c.NowState;
+				// 그 외의 경우는 죽는다.
+				else
+					c.NextState = 0;
+			}
+		}
+
+		public void UpdateStates()
+		{
+			foreach (Cell c in Cells)
+				c.NowState = c.NextState;
+		}
+	}
+
 }

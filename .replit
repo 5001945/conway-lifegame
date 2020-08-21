@@ -1,2 +1,2 @@
 language = "csharp"
-run = "cd Conway\nmcs -out:main.exe conway.cs main.cs\nmono main.exe"
+run = "cd Conway\nmcs -out:replit_build/main.exe conway.cs main.cs\nmono replit_build/main.exe"
