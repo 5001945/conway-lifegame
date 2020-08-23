@@ -235,7 +235,7 @@ namespace Conway
 			foreach (Cell c in Cells)
 			{
 				// 만약 c의 livingCellCount가 birth에 있다면, c의 nextState는 1.
-				if (GoL.Birth.Contains(c.LivingCellCount))
+				if (GoL.Birth.Contains(c.LivingCellCount) && c.NowState == 0)
 					c.NextState = 1;
 				// 만약 c의 livingCellCount가 survive에 있다면, c의 nextState는 유지.
 				else if (GoL.Survive.Contains(c.LivingCellCount))
