@@ -5,9 +5,15 @@ using System.Text.RegularExpressions;
 
 namespace Conway
 {
-	public enum DIRECTION
+	public enum Direction : int
 	{
 		Up, UpRight, Right, DownRight, Down, DownLeft, Left, UpLeft
+	};
+
+	[Flags] public enum LivingStates
+	{
+		Dead  = 0b_0000,
+		Alive = 0b_0001
 	};
 
 	public class GameOfLife
@@ -82,7 +88,7 @@ namespace Conway
 				if ( (xy.Length == 0) || (xy[0] == '#') )
 					continue;
 				int[] xys = Str2Intarr(xy);
-				CN[xys[0], xys[1]].NowState = 1;
+				CN[xys[0], xys[1]].NowState = LivingStates.Alive;
 			}
 			sr.Close();
 			/*
@@ -122,10 +128,18 @@ namespace Conway
 			{
 				for (int c = 0; c < CN.Width; c++)
 				{
-					if (CN[r, c].NowState == 1)
-						Console.Write("■");
-					else
-						Console.Write("□");
+					switch (CN[r, c].NowState)
+					{
+						case LivingStates.Alive:
+							Console.Write("■");
+							break;
+						case LivingStates.Dead:
+							Console.Write("□");
+							break;
+					}
+					/*
+					추후 다른 Flag값이 추가된다면 늘려나가야징
+					*/
 				}
 				Console.WriteLine();
 			}
@@ -144,7 +158,7 @@ namespace Conway
 			}
 			catch (FormatException)
 			{
-				Console.WriteLine($"Unable to parse string to int array.");
+				Console.WriteLine("Unable to parse string to int array.");
 				return null;
 			}
 			return intarr;
@@ -180,44 +194,44 @@ namespace Conway
 
 				// case Up:
 				if (i < Width)
-					Cells[i].NearCell[(int)DIRECTION.Up] = OutOfBound;
+					Cells[i].NearCell[(int)Direction.Up] = OutOfBound;
 				else
-					Cells[i].NearCell[(int)DIRECTION.Up] = Cells[i - Width];
+					Cells[i].NearCell[(int)Direction.Up] = Cells[i - Width];
 				// case UpRight:
 				if ( (i < Width) || (i%Width == Width-1) )
-					Cells[i].NearCell[(int)DIRECTION.UpRight] = OutOfBound;
+					Cells[i].NearCell[(int)Direction.UpRight] = OutOfBound;
 				else
-					Cells[i].NearCell[(int)DIRECTION.UpRight] = Cells[i - Width + 1];
+					Cells[i].NearCell[(int)Direction.UpRight] = Cells[i - Width + 1];
 				// case Right:
 				if (i%Width == Width-1)
-					Cells[i].NearCell[(int)DIRECTION.Right] = OutOfBound;
+					Cells[i].NearCell[(int)Direction.Right] = OutOfBound;
 				else
-					Cells[i].NearCell[(int)DIRECTION.Right] = Cells[i + 1];
+					Cells[i].NearCell[(int)Direction.Right] = Cells[i + 1];
 				// case DownRight:
 				if ( (i >= Width*(Height-1)) || (i%Width == Width-1) )
-					Cells[i].NearCell[(int)DIRECTION.DownRight] = OutOfBound;
+					Cells[i].NearCell[(int)Direction.DownRight] = OutOfBound;
 				else
-					Cells[i].NearCell[(int)DIRECTION.DownRight] = Cells[i + Width + 1];
+					Cells[i].NearCell[(int)Direction.DownRight] = Cells[i + Width + 1];
 				// case Down:
 				if (i >= Width*(Height-1))
-					Cells[i].NearCell[(int)DIRECTION.Down] = OutOfBound;
+					Cells[i].NearCell[(int)Direction.Down] = OutOfBound;
 				else
-					Cells[i].NearCell[(int)DIRECTION.Down] = Cells[i + Width];
+					Cells[i].NearCell[(int)Direction.Down] = Cells[i + Width];
 				// case DownLeft:
 				if ( (i >= Width*(Height-1)) || (i%Width == 0) )
-					Cells[i].NearCell[(int)DIRECTION.DownLeft] = OutOfBound;
+					Cells[i].NearCell[(int)Direction.DownLeft] = OutOfBound;
 				else
-					Cells[i].NearCell[(int)DIRECTION.DownLeft] = Cells[i + Width - 1];
+					Cells[i].NearCell[(int)Direction.DownLeft] = Cells[i + Width - 1];
 				// case Left:
 				if (i%Width == 0)
-					Cells[i].NearCell[(int)DIRECTION.Left] = OutOfBound;
+					Cells[i].NearCell[(int)Direction.Left] = OutOfBound;
 				else
-					Cells[i].NearCell[(int)DIRECTION.Left] = Cells[i - 1];
+					Cells[i].NearCell[(int)Direction.Left] = Cells[i - 1];
 				// case UpLeft:
 				if ( (i < Width) || (i%Width == 0) )
-					Cells[i].NearCell[(int)DIRECTION.UpLeft] = OutOfBound;
+					Cells[i].NearCell[(int)Direction.UpLeft] = OutOfBound;
 				else
-					Cells[i].NearCell[(int)DIRECTION.UpLeft] = Cells[i - Width - 1];
+					Cells[i].NearCell[(int)Direction.UpLeft] = Cells[i - Width - 1];
 			}
 		}
 		public Cell this[int row, int col]
@@ -234,15 +248,15 @@ namespace Conway
 		{
 			foreach (Cell c in Cells)
 			{
-				// 만약 c의 livingCellCount가 birth에 있다면, c의 nextState는 1.
-				if (GoL.Birth.Contains(c.LivingCellCount) && c.NowState == 0)
-					c.NextState = 1;
+				// 만약 c의 livingCellCount가 birth에 있고 c가 지금 죽어있다면, c의 nextState는 Alive.
+				if (GoL.Birth.Contains(c.LivingCellCount) && !c.NowState.HasFlag(LivingStates.Alive))
+					c.NextState = LivingStates.Alive;
 				// 만약 c의 livingCellCount가 survive에 있다면, c의 nextState는 유지.
 				else if (GoL.Survive.Contains(c.LivingCellCount))
 					c.NextState = c.NowState;
 				// 그 외의 경우는 죽는다.
 				else
-					c.NextState = 0;
+					c.NextState = LivingStates.Dead;
 			}
 		}
 
@@ -259,11 +273,10 @@ namespace Conway
 
 		public Cell[] NearCell = new Cell[8];  // 클래스는 기본적으로 ref 형식. 처음엔 null로 맞춰있다.
 		
-		private int nowState = 0;
-		public int nextState = 0;
-		public int NowState { get => nowState; set => nowState = value; }  // 읽기 전용으로 하고 싶은 마음이 굴뚝같지만 GameOfLife 초기화할 때 딱 한 번 접근하기 때문에 그럴 수 없다...
-		public int NextState { get => nextState; set => nextState = value; }  // 읽기 전용으로 하고 싶은 마음이 굴뚝같지만 CellNetwork에서 nextState 계산할 때 딱 한 번 접근하기 때문에 그럴 수 없다...
-		// 0: dead, 1: alive
+		private LivingStates nowState = LivingStates.Dead;
+		private LivingStates nextState = LivingStates.Dead;
+		public LivingStates NowState { get => nowState; set => nowState = value; }  // 읽기 전용으로 하고 싶은 마음이 굴뚝같지만 GameOfLife 초기화할 때 딱 한 번 접근하기 때문에 그럴 수 없다...
+		public LivingStates NextState { get => nextState; set => nextState = value; }  // 읽기 전용으로 하고 싶은 마음이 굴뚝같지만 CellNetwork에서 nextState 계산할 때 딱 한 번 접근하기 때문에 그럴 수 없다...
 
 		// 이하는 읽기 전용.
 		public int LivingCellCount
@@ -273,8 +286,8 @@ namespace Conway
 				int sum = 0;
 				foreach (Cell c in NearCell)
 				{
-					if (c != null)
-						sum += c.nowState;
+					if ((c != null) && c.nowState.HasFlag(LivingStates.Alive))  // c의 nowState가 Alive일 때
+						sum++;
 				}
 				return sum;
 			}
