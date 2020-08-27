@@ -8,7 +8,8 @@ class MainClass
 		string filename;
 
 		if (args.Length == 0)
-			filename = "init_highlife_replicator.txt";
+//			filename = "init_highlife_replicator.txt";
+			filename = "init_LWSS.txt";
 		else if (args.Length == 1)
 			filename = args[0];
 		else
